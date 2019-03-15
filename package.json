@@ -28,6 +28,9 @@
     "files": [
       "dist/electron/**/*"
     ],
+    "extraResources": [
+      "src/images/watcher.png"
+    ],
     "dmg": {
       "contents": [
         {

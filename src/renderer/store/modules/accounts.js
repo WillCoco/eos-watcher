@@ -1,8 +1,8 @@
-const { app } = require('electron').remote;
+const { remote, ipcRenderer } = require('electron');
 import fs from 'fs';
 import path from 'path';
 import moment from 'moment';
-import { Api, JsonRpc } from "eosjs";
+import { JsonRpc } from "eosjs";
 
 const baseGap = 20;
 const defaultOffset = -500;
@@ -28,8 +28,11 @@ const defaultOffset = -500;
 // http://api.eossweden.se
 // http://eu.eosdac.io
 let rpc = new JsonRpc('http://api.eossweden.se');
+let WSSs;
+let threshold = 2;
 
 const defaultConfig = {
+  inited: false,
   EOSNode: 'http://api.eossweden.se',
   accounts: {
     'eospstotoken': {
@@ -49,24 +52,26 @@ const state = {
 };
 
 const mutations = {
+  INIT (state, payload) {
+    state.inited = true;
+  },
   RESET_ACCOUNT (state, payload) {
     console.log('RESET_ACCOUNT');
     state.account = payload.account;
   },
   UPDATE_ACCOUNT (state, payload) {
     console.log(state,'UPDATE_OFFSET');
-    // Vue.set(state, 'account', { ...state.account, [payload.name]: {...state.account[payload.name], ...payload.history} })
     state.account = { ...state.account, [payload.name]: {...state.account[payload.name], ...payload.history} };
   },
   UPDATE_OFFSET (state, payload) {
-    // state.offset = payload.offset;
+    state.offset = payload.offset;
   },
 };
 
 const actions = {
   async init({ commit}) {
     // 读取本地配置
-    const p = path.join(app.getPath('userData'), 'config.json');
+    const p = path.join(remote.app.getPath('userData'), 'config.json');
     let config;
     try {
       const data = fs.readFileSync(p);
@@ -79,10 +84,16 @@ const actions = {
       });
     }
 
+    // listener
+    if (config.threshold) threshold = config.notice_threshold;
+    if (config.EOS_park_apikey) WSSs = config.EOS_park_apikey.map(key => new WebSocket(`wss://ws.eospark.com/v1/ws?apikey=${key}`));
+    listenAccounts(config.accounts, threshold);
+
     // 初始化
     rpc = new JsonRpc(config.EOSNode);
 
     commit('RESET_ACCOUNT', { account: config.accounts });
+    commit('INIT');
   },
   async updateHistory ({ commit, state }, payload = {}) {
     if (payload.loadMore) {
@@ -91,16 +102,16 @@ const actions = {
 
     const allGet = Object.keys(state.account || {}) || [];
     allGet.map((name) =>
-        new Promise(
-          (resolve) =>
-          getHis(name, state.account[name].offset)
-            .then((res) => {
-              commit('UPDATE_OFFSET', {offset: state.offset - baseGap});
+      new Promise(
+        (resolve) =>
+        getHis(name, state.account[name].offset)
+          .then((res) => {
+            commit('UPDATE_OFFSET', {offset: state.offset - baseGap});
 
-              commit('UPDATE_ACCOUNT', {name, history: formatHis(res.actions, name)});
-              resolve(res.actions)
-            })
-        )
+            commit('UPDATE_ACCOUNT', {name, history: formatHis(res.actions, name)});
+            resolve(res.actions)
+          })
+      )
     );
     console.log(allGet, 'allGet');
     Promise.all(allGet)
@@ -174,6 +185,73 @@ function formatHis(history = [], name) {
     }
   });
   return res;
+}
+
+// 每个apikey分配两个监听账户
+function listenAccounts(accounts, threshold) {
+  if (!WSSs || !accounts) return;
+
+  // 权限
+  if(Notification.permission === 'granted'){
+    console.log('用户允许通知');
+  }else if(Notification.permission === 'denied'){
+    console.log('用户拒绝通知');
+  }else{
+    Notification.requestPermission()
+      .then(function(permission) {
+        if(permission === 'granted'){
+          console.log('用户允许通知');
+        }else if(permission === 'denied'){
+          console.log('用户拒绝通知');
+        }
+      });
+  }
+
+  // 所有需要推送的账户
+  const needWatch = Object.keys(accounts).filter((account) => accounts[account].watch);
+
+
+  // 每个WSS可以连接两个账户
+  WSSs.forEach((WSS, wsIndex) => {
+    WSS.onmessage = (msgJson) => {
+      const msg = JSON.parse(msgJson.data);
+      if (msg.msg_type !== 'heartbeat') {
+        const { actions = [] } = msg.data || {};
+        const { data = {} } = actions[0] || {};
+        const quantity = parseInt(data.quantity, 10);
+        const isIncome = needWatch.indexOf(data.to) !== -1 && needWatch.indexOf(data.from) === -1;
+        const myAccount = isIncome ? data.to : data.from;
+        const icon = isIncome ? require('../../../images/income.png') : require('../../../images/payout.png');
+
+        if (quantity && quantity > threshold) {
+          // 通知推送
+          new Notification(myAccount, {
+            body: `${isIncome ? '转入' : '转出'} ${data.quantity}`,
+            icon
+          });
+
+          // 设置tray
+          ipcRenderer.send('setTray', `${isIncome ? '转入' : '转出'} ${data.quantity}`)
+        }
+      }
+    };
+
+    WSS.onopen = () => {
+      if (needWatch[wsIndex]) {
+        WSS.send(JSON.stringify({
+          "msg_type": "subscribe_account",
+          name: needWatch[wsIndex]
+        }));
+      }
+
+      if (needWatch[wsIndex + 1]) {
+        WSS.send(JSON.stringify({
+          "msg_type": "subscribe_account",
+          name: needWatch[wsIndex + 1]
+        }));
+      }
+    }
+  });
 }
 
 export default {

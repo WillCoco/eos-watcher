@@ -1,18 +1,14 @@
 <template>
   <div id="container">
-    <el-row>
-      <el-col :span="2">
-        <el-button @click="test()" class="btn-setting" type="text" icon="el-icon-menu"></el-button>
-      </el-col>
-    </el-row>
     <!--<add-account></add-account>-->
-    <div v-for="(account, index) in accountsName">
+    <Empty v-if="accountsName.length === 0" />
+    <div v-else v-for="(account, index) in accountsName">
       <el-row>
         <el-col :span="1" :offset="2" style="text-align: center">
           {{ index + 1 }}.
         </el-col>
         <el-col :span="18" style="text-align: center;">
-          <chart v-bind:accountName="account" v-bind:accounts="accounts" v-bind:index="index" v-bind:b="b"></chart>
+          <chart v-bind:accountName="account" v-bind:accounts="accounts" v-bind:index="index"></chart>
         </el-col>
       </el-row>
     </div>
@@ -21,11 +17,13 @@
 
 <script>
   import Chart from './Chart'
-  import AddAccount from './AddAccount'
+  import Empty from './Empty'
+  import { ipcRenderer } from 'electron'
+  import throttle from 'lodash/throttle'
 
   export default {
     name: 'home',
-    components: { Chart, AddAccount },
+    components: { Chart, Empty },
     computed: {
       accountsName: function() {
         const { account = {} } = this.$store.state.accounts || {};
@@ -36,21 +34,20 @@
         console.log(account || [], 112);
         return account;
       },
-      b: function() {
-        const { b } = this.$store.state.accounts;
-        console.log(b);
-        return b;
-      }
     },
     methods: {
       getHis: function() {
         this.$store.dispatch('updateHistory')
       },
-      test: function() {
-        this.$store.dispatch('testb')
-      }
     },
     created() {
+      ipcRenderer.on('refresh', () => {
+        if (this.$store.state.accounts.inited) {
+          const getH = throttle(this.getHis, 1000);
+          getH();
+        }
+      });
+
       this.$store.dispatch('init')
         .then(() => {
           this.getHis();

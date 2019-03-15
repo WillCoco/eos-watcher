@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Tray, Menu, systemPreferences } from 'electron'
+import { app, BrowserWindow, Tray, Menu, ipcMain } from 'electron'
 let AutoLaunch = require('auto-launch');
+let path = require('path');
 
 /**
  * Set `__static` path to static files in production
@@ -87,9 +88,12 @@ let minecraftAutoLauncher = new AutoLaunch({
 });
 
 function onReady() {
-  tray = new Tray('src/main/watcher.png');
-  tray.setToolTip('This is my application.');
-  tray.setTitle('EOS watcher');
+  const trayPath = process.env.NODE_ENV !== 'development' ?
+    path.join(__dirname.replace(/app.asar.*/, ''), 'src/images/watcher.png') :
+    'src/images/watcher.png';
+  tray = new Tray(trayPath);
+  // tray.setToolTip('This is my application.');
+  // tray.setTitle('EOS watcher');
 
   const contextMenu = Menu.buildFromTemplate([
     { label: '添加' },
@@ -115,13 +119,17 @@ function onReady() {
 
   tray.on('click', function() {
     if (mainWindow && !mainWindow.isVisible()) {
+      // 更新数据
+      mainWindow.webContents.send('refresh');
+
+      // 显示窗体
       mainWindow.show();
     }
   });
 
-  // tray.setContextMenu(contextMenu)
-
-  // console.log(tray.on, 222)
+  ipcMain.on('setTray', (event, data) => {
+    if (tray) tray.setTitle(data);
+  });
 
   createWindow();
 }
