@@ -2,6 +2,21 @@
 
 > An electron-vue project
 
+#### Screen Shot
+
+##### 配置
+![image]('https://github.com/WillCoco/eos-watcher/src/images/ss00.jpg')
+
+##### 近期余额曲线
+![image]('https://github.com/WillCoco/eos-watcher/src/images/ss01.jpg')
+
+##### 菜单栏最新交易
+![image]('https://github.com/WillCoco/eos-watcher/src/images/ss02.jpg')
+
+##### 实时大宗交易推送
+![image]('https://github.com/WillCoco/eos-watcher/src/images/ss03.jpg')
+
+
 #### Build Setup
 
 ``` bash
