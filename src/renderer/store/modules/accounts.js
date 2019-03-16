@@ -29,7 +29,7 @@ const defaultOffset = -500;
 // http://eu.eosdac.io
 let rpc = new JsonRpc('http://api.eossweden.se');
 let WSSs;
-let threshold = 2;
+let threshold;
 
 const defaultConfig = {
   EOSNode: 'http://api.eossweden.se',
@@ -85,7 +85,7 @@ const actions = {
     }
 
     // listener
-    if (config.threshold) threshold = config.notice_threshold;
+    if (config.notice_threshold) threshold = config.notice_threshold;
     if (config.EOS_park_apikey) WSSs = config.EOS_park_apikey.map(key => new WebSocket(`wss://ws.eospark.com/v1/ws?apikey=${key}`));
     listenAccounts(config.accounts, threshold);
 
