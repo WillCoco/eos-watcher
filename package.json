@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "author": "will xu <xuke516469920@gmail.com>",
   "description": "An electron-vue project",
-  "license": null,
+  "license": "will xu <xuke516469920@gmail.com>",
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",
@@ -47,7 +47,10 @@
       ]
     },
     "mac": {
-      "icon": "build/icons/icon.icns"
+      "icon": "build/icons/icon.icns",
+      "extendInfo": {
+        "LSUIElement": "1"
+      }
     },
     "win": {
       "icon": "build/icons/icon.ico"

@@ -45,7 +45,7 @@ npm manifest:
         "dist/electron/**/*"
       ],
       "extraResources": [
-        "src/images/watcher.png",
+        "src/images/watcher.png"
       ],
       "dmg": {
         "contents": [
@@ -9560,9 +9560,16 @@ Lockfile:
     resolved "http://registry.npm.taobao.org/zrender/download/zrender-4.0.4.tgz#910e60d888f00c9599073f23758dd23345fe48fd"
 
 Trace: 
-  SyntaxError: /Users/USER/TrainingCamp/VUE/EOS-watcher/package.json: Unexpected token ] in JSON at position 1272
-      at JSON.parse (<anonymous>)
-      at /usr/local/lib/node_modules/yarn/lib/cli.js:1036:59
-      at Generator.next (<anonymous>)
-      at step (/usr/local/lib/node_modules/yarn/lib/cli.js:98:30)
-      at /usr/local/lib/node_modules/yarn/lib/cli.js:109:13
+  Error: Command failed.
+  Exit code: 1
+  Command: sh
+  Arguments: -c node .electron-vue/build.js && electron-builder
+  Directory: /Users/USER/TrainingCamp/VUE/EOS-watcher
+  Output:
+  
+      at ProcessTermError.MessageError (/usr/local/lib/node_modules/yarn/lib/cli.js:186:110)
+      at new ProcessTermError (/usr/local/lib/node_modules/yarn/lib/cli.js:226:113)
+      at ChildProcess.<anonymous> (/usr/local/lib/node_modules/yarn/lib/cli.js:30281:17)
+      at ChildProcess.emit (events.js:182:13)
+      at maybeClose (internal/child_process.js:962:16)
+      at Process.ChildProcess._handle.onexit (internal/child_process.js:251:5)

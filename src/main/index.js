@@ -51,6 +51,7 @@ function createWindow() {
   // });
   mainWindow.on('close',function(){
     mainWindow = null;
+    app.quit();
   });
 
   // 失去焦点隐藏窗口

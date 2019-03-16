@@ -107,6 +107,15 @@
     mounted() {
       this.myChart = echarts.init(document.getElementById(this.chartId));
       this.updateChart();
+
+
+      setInterval(() => {
+        this.myChart.clear();
+        this.updateChart();
+      }, 6000)
+    },
+    updated() {
+      console.log('chart update')
     }
   }
 </script>

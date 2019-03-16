@@ -32,16 +32,19 @@ let WSSs;
 let threshold = 2;
 
 const defaultConfig = {
-  inited: false,
   EOSNode: 'http://api.eossweden.se',
+  EOS_park_apikey: ['425c1330e00c823155ae3963fdaed2f8'],
+  notice_threshold: 500,
   accounts: {
     'eospstotoken': {
       offset: defaultOffset,
+      watch: true
     }
   },
 };
 
 const state = {
+  inited: false,
   account: {
 
   },
@@ -62,10 +65,7 @@ const mutations = {
   UPDATE_ACCOUNT (state, payload) {
     console.log(state,'UPDATE_OFFSET');
     state.account = { ...state.account, [payload.name]: {...state.account[payload.name], ...payload.history} };
-  },
-  UPDATE_OFFSET (state, payload) {
-    state.offset = payload.offset;
-  },
+  }
 };
 
 const actions = {
@@ -96,9 +96,6 @@ const actions = {
     commit('INIT');
   },
   async updateHistory ({ commit, state }, payload = {}) {
-    if (payload.loadMore) {
-      commit('UPDATE_OFFSET', {offset: state.offset - baseGap})
-    }
 
     const allGet = Object.keys(state.account || {}) || [];
     allGet.map((name) =>
@@ -106,8 +103,6 @@ const actions = {
         (resolve) =>
         getHis(name, state.account[name].offset)
           .then((res) => {
-            commit('UPDATE_OFFSET', {offset: state.offset - baseGap});
-
             commit('UPDATE_ACCOUNT', {name, history: formatHis(res.actions, name)});
             resolve(res.actions)
           })
@@ -222,7 +217,7 @@ function listenAccounts(accounts, threshold) {
         const isIncome = needWatch.indexOf(data.to) !== -1 && needWatch.indexOf(data.from) === -1;
         const myAccount = isIncome ? data.to : data.from;
         const icon = isIncome ? require('../../../images/income.png') : require('../../../images/payout.png');
-
+        console.log(quantity , threshold, quantity > threshold, 121312)
         if (quantity && quantity > threshold) {
           // 通知推送
           new Notification(myAccount, {
@@ -237,6 +232,7 @@ function listenAccounts(accounts, threshold) {
     };
 
     WSS.onopen = () => {
+      console.log(needWatch[wsIndex], needWatch[wsIndex+1], '加入watcher');
       if (needWatch[wsIndex]) {
         WSS.send(JSON.stringify({
           "msg_type": "subscribe_account",
